@@ -27,5 +27,14 @@ public enum Especialidad {
     public String getNombre() {
         return nombre;
     }
+    
+    public static Especialidad porId(int id) {
+        for (Especialidad e : values()) {
+            if (e.id == id) {
+                return e;
+            }
+        }
+        return null;
+    }
 
 }

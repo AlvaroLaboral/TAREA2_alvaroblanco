@@ -20,20 +20,15 @@ public class ConexionBD {
 				Properties props = new Properties();
 				try (InputStream is = ConexionBD.class.getClassLoader().getResourceAsStream("db.properties")) {
 					if (is == null) {
-						System.out.println("No se encuentra el fichero db.properties");
 						return null;
 					}
 					props.load(is);
 				}
-				String url = props.getProperty("url");
-				String usuario = props.getProperty("usuario");
-				String password = props.getProperty("password");
-				conexion = DriverManager.getConnection(url, usuario, password);
+				conexion = DriverManager.getConnection(props.getProperty("url"), props.getProperty("usuario"),
+						props.getProperty("password"));
 			}
-		} catch (IOException e) {
-			System.out.println("Error al leer db.properties: " + e.getMessage());
-		} catch (SQLException e) {
-			System.out.println("Error al conectar con la BD: " + e.getMessage());
+		} catch (IOException | SQLException e) {
+			conexion = null;
 		}
 		return conexion;
 	}
@@ -44,7 +39,15 @@ public class ConexionBD {
 				conexion.close();
 			}
 		} catch (SQLException e) {
-			System.out.println("Error al cerrar la conexión: " + e.getMessage());
+			conexion = null;
 		}
+	}
+
+	static Connection obtener() {
+		Connection con = getConexion();
+		if (con == null) {
+			throw new AccesoDatosException("No hay conexión con la base de datos");
+		}
+		return con;
 	}
 }

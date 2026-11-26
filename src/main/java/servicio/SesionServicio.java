@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import dao.AccesoDatosException;
 import dao.EmpleadoDAO;
 import modelo.Perfil;
 import modelo.Sesion;
@@ -32,7 +33,12 @@ public class SesionServicio {
 			sesion = new Sesion(usuario, "Administrador", Perfil.ADMIN);
 			return null;
 		}
-		Sesion encontrada = empleadoDAO.buscarPorCredenciales(usuario, contrasenia);
+		Sesion encontrada;
+		try {
+			encontrada = empleadoDAO.buscarPorCredenciales(usuario, contrasenia);
+		} catch (AccesoDatosException e) {
+			return "Error al acceder a la base de datos. Inténtalo más tarde.";
+		}
 		if (encontrada == null) {
 			return "Usuario o contraseña incorrectos.";
 		}
