@@ -9,6 +9,8 @@ import dao.EmpleadoDAO;
 import modelo.Perfil;
 import modelo.Sesion;
 
+
+
 public class SesionServicio {
 
 	private EmpleadoDAO empleadoDAO = new EmpleadoDAO();
@@ -51,8 +53,7 @@ public class SesionServicio {
 	}
 
 	private boolean esAdmin(String usuario, String contrasenia) {
-		return usuario.equals(leerPropiedad("admin.usuario"))
-				&& contrasenia.equals(leerPropiedad("admin.password"));
+		return usuario.equals(leerPropiedad("admin.usuario")) && contrasenia.equals(leerPropiedad("admin.password"));
 	}
 
 	private String leerPropiedad(String clave) {
@@ -66,5 +67,9 @@ public class SesionServicio {
 			return null;
 		}
 		return props.getProperty(clave);
+	}
+
+	public boolean esUsuarioAdmin(String usuario) {
+		return usuario.equalsIgnoreCase(leerPropiedad("admin.usuario"));
 	}
 }
