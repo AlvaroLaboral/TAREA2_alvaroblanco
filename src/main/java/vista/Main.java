@@ -35,6 +35,7 @@ public class Main {
 		if (ConexionBD.getConexion() == null) {
 			System.out.println(Color.ROJO + Color.NEGRITA
 					+ "No se pudo conectar con la base de datos. El programa se cerrará." + Color.RESET);
+			System.out.println(Color.ROJO + "Motivo: " + ConexionBD.getUltimoError() + Color.RESET);
 			return;
 		}
 		menuInvitado();
@@ -205,6 +206,10 @@ public class Main {
 
 	static void verAlergias() {
 		List<Alergia> alergias = alergiaServicio.listarAlergias();
+		String aviso = alergiaServicio.avisoLectura();
+		if (aviso != null) {
+			System.out.println(Color.AMARILLO + aviso + Color.RESET);
+		}
 		System.out.println(Color.CIAN + Color.NEGRITA + "\n--- ALERGIAS REGISTRADAS ---" + Color.RESET);
 		if (alergias.isEmpty()) {
 			System.out.println("No hay alergias registradas.");
@@ -219,33 +224,31 @@ public class Main {
 
 	static void nuevaAlergia() {
 		System.out.println(Color.CIAN + Color.NEGRITA + "\n--- NUEVA ALERGIA ---" + Color.RESET);
+		System.out.println("(Escribe 'cancelar' en cualquier campo para salir)");
 
-		String nombre = pedir("Nombre de la alergia:");
-		if (errorAlergia(alergiaServicio.validarTexto(nombre, "nombre de la alergia")))
-			return;
+		String nombre = pedirValido("Nombre de la alergia:", v -> alergiaServicio.validarTexto(v, "nombre de la alergia"));
+		if (nombre == null) { cancelado(); return; }
 
-		String nombreMed = pedir("Nombre del medicamento:");
-		if (errorAlergia(alergiaServicio.validarTexto(nombreMed, "nombre del medicamento")))
-			return;
+		String nombreMed = pedirValido("Nombre del medicamento:", v -> alergiaServicio.validarTexto(v, "nombre del medicamento"));
+		if (nombreMed == null) { cancelado(); return; }
 
-		String principio = pedir("Principio activo:");
-		if (errorAlergia(alergiaServicio.validarTexto(principio, "principio activo")))
-			return;
+		String principio = pedirValido("Principio activo:", v -> alergiaServicio.validarTexto(v, "principio activo"));
+		if (principio == null) { cancelado(); return; }
 
-		String dosisTexto = pedir("Dosis máxima diaria (mg):");
-		if (errorAlergia(alergiaServicio.validarDosis(dosisTexto)))
-			return;
+		String dosisTexto = pedirValido("Dosis máxima diaria (mg):", alergiaServicio::validarDosis);
+		if (dosisTexto == null) { cancelado(); return; }
 
 		Long id = alergiaServicio.siguienteIdAlergia();
-		Medicamento m = new Medicamento(id, nombreMed, principio, Integer.parseInt(dosisTexto));
+		if (id == null) {
+			System.out.println(Color.ROJO + Color.NEGRITA + "No se puede acceder a la carpeta de alergias." + Color.RESET);
+			return;
+		}
+		Medicamento m = new Medicamento(id, nombreMed, principio, Integer.parseInt(dosisTexto.trim()));
 		Alergia a = new Alergia(id, nombre, m);
 
 		System.out.println("Se va a crear la siguiente alergia:");
 		mostrarAlergia(a);
-		if (!confirmar()) {
-			System.out.println("Operación cancelada.");
-			return;
-		}
+		if (!confirmar()) { cancelado(); return; }
 
 		String resultado = alergiaServicio.guardarAlergia(a);
 		if (resultado == null) {
@@ -267,45 +270,42 @@ public class Main {
 			System.out.println(a.getIdAlergia() + ". " + a.getNombre());
 		}
 
-		long id = leerOpcion();
-		Alergia a = alergiaServicio.buscarAlergia(id);
-		if (a == null) {
-			System.out.println(Color.ROJO + Color.NEGRITA + "No existe ninguna alergia con ese id." + Color.RESET);
-			return;
-		}
-
+		String idTexto = pedirValido("Id de la alergia que quieres editar:", v -> {
+			if (!v.matches("\\d+")) {
+				return "El id debe ser un número.";
+			}
+			return alergiaServicio.buscarAlergia(Long.parseLong(v)) == null ? "No existe ninguna alergia con ese id." : null;
+		});
+		if (idTexto == null) { cancelado(); return; }
+		Alergia a = alergiaServicio.buscarAlergia(Long.parseLong(idTexto));
 		Medicamento m = a.getMedicamento();
-		System.out.println("Deja el campo en blanco para mantener el valor actual.");
 
-		String nombre = pedir("Nombre de la alergia [" + a.getNombre() + "]:");
-		if (nombre.isEmpty())
-			nombre = a.getNombre();
+		System.out.println("Deja el campo en blanco para mantener el valor actual. Escribe 'cancelar' para salir.");
 
-		String nombreMed = pedir("Nombre del medicamento [" + m.getNombre() + "]:");
-		if (nombreMed.isEmpty())
-			nombreMed = m.getNombre();
+		String nombre = pedirValidoOpcional("Nombre de la alergia", a.getNombre(),
+				v -> alergiaServicio.validarTexto(v, "nombre de la alergia"));
+		if (nombre == null) { cancelado(); return; }
 
-		String principio = pedir("Principio activo [" + m.getPrincipioActivo() + "]:");
-		if (principio.isEmpty())
-			principio = m.getPrincipioActivo();
+		String nombreMed = pedirValidoOpcional("Nombre del medicamento", m.getNombre(),
+				v -> alergiaServicio.validarTexto(v, "nombre del medicamento"));
+		if (nombreMed == null) { cancelado(); return; }
 
-		String dosisTexto = pedir("Dosis máxima diaria en mg [" + m.getDosisMaxDiariaMg() + "]:");
-		if (dosisTexto.isEmpty())
-			dosisTexto = String.valueOf(m.getDosisMaxDiariaMg());
-		if (errorAlergia(alergiaServicio.validarDosis(dosisTexto)))
-			return;
+		String principio = pedirValidoOpcional("Principio activo", m.getPrincipioActivo(),
+				v -> alergiaServicio.validarTexto(v, "principio activo"));
+		if (principio == null) { cancelado(); return; }
+
+		String dosisTexto = pedirValidoOpcional("Dosis máxima diaria en mg", String.valueOf(m.getDosisMaxDiariaMg()),
+				alergiaServicio::validarDosis);
+		if (dosisTexto == null) { cancelado(); return; }
 
 		a.setNombre(nombre);
 		m.setNombre(nombreMed);
 		m.setPrincipioActivo(principio);
-		m.setDosisMaxDiariaMg(Integer.parseInt(dosisTexto));
+		m.setDosisMaxDiariaMg(Integer.parseInt(dosisTexto.trim()));
 
 		System.out.println("La alergia quedará así:");
 		mostrarAlergia(a);
-		if (!confirmar()) {
-			System.out.println("Operación cancelada. No se ha modificado nada.");
-			return;
-		}
+		if (!confirmar()) { cancelado(); return; }
 
 		String resultado = alergiaServicio.guardarAlergia(a);
 		if (resultado == null) {
@@ -324,14 +324,6 @@ public class Main {
 	static boolean confirmar() {
 		System.out.println("¿Confirmas la operación? (S/N)");
 		return sc.nextLine().trim().equalsIgnoreCase("S");
-	}
-
-	static boolean errorAlergia(String mensaje) {
-		if (mensaje != null) {
-			System.out.println(Color.ROJO + Color.NEGRITA + mensaje + " Operación cancelada." + Color.RESET);
-			return true;
-		}
-		return false;
 	}
 
 	static void verMiFicha() {
@@ -403,10 +395,7 @@ public class Main {
 		}
 		default -> {
 			List<Especialidad> especialidades = pedirEspecialidades();
-			while (empleadoServicio.validarEspecialidades(especialidades) != null) {
-				System.out.println(Color.ROJO + Color.NEGRITA + "Un cirujano debe tener al menos una especialidad. Inténtalo de nuevo." + Color.RESET);
-				especialidades = pedirEspecialidades();
-			}
+			if (especialidades == null) { cancelado(); return; }
 			nuevo = new Cirujano(nombre, telefono, email, nif, direccion, usuario, password, especialidades);
 		}
 		}
@@ -613,7 +602,7 @@ public class Main {
 		mostrarPaciente(p);
 		if (!confirmar()) { cancelado(); return; }
 
-		String resultado = pacienteServicio.modificarPaciente(p);
+		String resultado = pacienteServicio.modificarPaciente(p, cambiarAlergias.equalsIgnoreCase("S"));
 		if (resultado == null) {
 			System.out.println(Color.VERDE + "Paciente modificado correctamente." + Color.RESET);
 		} else {
@@ -681,10 +670,16 @@ public class Main {
 	static void buscarPacientes() {
 		System.out.println(Color.CIAN + Color.NEGRITA + "\n--- BUSCAR PACIENTES ---" + Color.RESET);
 		System.out.println("Rellena los filtros que quieras. Deja en blanco los que no quieras usar.");
+		System.out.println("(Escribe 'cancelar' en cualquier campo para salir)");
+
 		String nombre = pedir("Nombre:");
+		if (nombre.equalsIgnoreCase("cancelar")) { cancelado(); return; }
 		String telefono = pedir("Teléfono:");
+		if (telefono.equalsIgnoreCase("cancelar")) { cancelado(); return; }
 		String email = pedir("Email:");
+		if (email.equalsIgnoreCase("cancelar")) { cancelado(); return; }
 		String nif = pedir("NIF/NIE:").toUpperCase();
+		if (nif.equalsIgnoreCase("cancelar")) { cancelado(); return; }
 
 		List<Paciente> pacientes = pacienteServicio.buscar(nombre, telefono, email, nif);
 		if (pacientes == null) {

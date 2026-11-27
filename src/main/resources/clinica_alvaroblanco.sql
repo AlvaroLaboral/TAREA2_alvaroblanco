@@ -2,16 +2,20 @@ DROP DATABASE IF EXISTS clinica_alvaroblanco;
 CREATE DATABASE clinica_alvaroblanco CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci;
 USE clinica_alvaroblanco;
 
+CREATE USER IF NOT EXISTS 'clinica'@'localhost' IDENTIFIED BY 'clinica123';
+GRANT ALL PRIVILEGES ON clinica_alvaroblanco.* TO 'clinica'@'localhost';
+FLUSH PRIVILEGES;
+
 CREATE TABLE paciente (
     idPaciente BIGINT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    fechaNacimiento DATE,
+    fechaNacimiento DATE NOT NULL,
     telefono VARCHAR(15),
     email VARCHAR(100),
     direccion VARCHAR(150),
     nifNie VARCHAR(9) NOT NULL UNIQUE,
     usuario VARCHAR(30) UNIQUE,
-    password VARCHAR(30),
+    password VARCHAR(30) COLLATE utf8mb4_bin,
     numHistoria BIGINT NOT NULL UNIQUE,
     descripcion VARCHAR(255)
 );
@@ -40,7 +44,7 @@ CREATE TABLE empleado (
     nifNie VARCHAR(9) NOT NULL UNIQUE,
     direccion VARCHAR(150),
     usuario VARCHAR(30) NOT NULL UNIQUE,
-    password VARCHAR(30) NOT NULL,
+    password VARCHAR(30) COLLATE utf8mb4_bin NOT NULL,
     perfil ENUM('SECRETARIADO','ENFERMERIA','CIRUGIA') NOT NULL
 );
 
@@ -112,8 +116,3 @@ INSERT INTO secretario (idEmpleado, aniosExperiencia) VALUES (1, 5);
 INSERT INTO enfermero (idEmpleado, categoria) VALUES (2, 'A');
 INSERT INTO cirujano (idEmpleado) VALUES (3);
 INSERT INTO cirujano_especialidad (idEmpleado, idEspecialidad) VALUES (3, 1), (3, 4);
-
-
-    
-
-        

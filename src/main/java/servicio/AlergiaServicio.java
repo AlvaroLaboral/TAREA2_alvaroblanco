@@ -30,18 +30,24 @@ public class AlergiaServicio {
 		}
 	}
 
+	public String avisoLectura() {
+		int n = alergiaDAO.getFicherosIlegibles();
+		if (n > 0) {
+			return "Aviso: " + n + " fichero(s) de alergias no se han podido leer.";
+		}
+		return null;
+	}
+
 	public Alergia buscarAlergia(Long id) {
 		return alergiaDAO.buscar(id);
 	}
 
 	public Long siguienteIdAlergia() {
-		long maximo = 0;
-		for (Alergia a : listarAlergias()) {
-			if (a.getIdAlergia() > maximo) {
-				maximo = a.getIdAlergia();
-			}
+		try {
+			return alergiaDAO.mayorId() + 1;
+		} catch (AccesoDatosException e) {
+			return null;
 		}
-		return maximo + 1;
 	}
 
 	public String validarTexto(String valor, String campo) {

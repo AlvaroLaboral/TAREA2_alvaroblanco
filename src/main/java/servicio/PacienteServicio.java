@@ -111,12 +111,12 @@ public class PacienteServicio {
 		return null;
 	}
 
-	public String modificarPaciente(Paciente p) {
+	public String modificarPaciente(Paciente p, boolean cambiarAlergias) {
 		if (!puedeGestionarPacientes()) {
 			return "No tienes permisos para gestionar pacientes.";
 		}
 		try {
-			pacienteDAO.actualizar(p);
+			pacienteDAO.actualizar(p, cambiarAlergias);
 		} catch (AccesoDatosException e) {
 			return "No se pudo modificar el paciente. No se ha cambiado nada.";
 		}

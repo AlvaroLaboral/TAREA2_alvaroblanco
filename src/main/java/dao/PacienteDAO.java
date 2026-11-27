@@ -48,7 +48,7 @@ public class PacienteDAO {
 			p.getHistorial().setNumHistoria(numHistoria);
 			guardarAlergias(con, p.getHistorial());
 			con.commit();
-		} catch (SQLException e) {
+		} catch (SQLException | RuntimeException e) {
 			deshacer(con);
 			throw new AccesoDatosException("Error al dar de alta el paciente", e);
 		} finally {
@@ -56,7 +56,7 @@ public class PacienteDAO {
 		}
 	}
 
-	public void actualizar(Paciente p) {
+	public void actualizar(Paciente p, boolean cambiarAlergias) {
 		Connection con = ConexionBD.obtener();
 		try {
 			con.setAutoCommit(false);
@@ -68,13 +68,15 @@ public class PacienteDAO {
 				ps.setLong(8, p.getIdPaciente());
 				ps.executeUpdate();
 			}
-			try (PreparedStatement ps = con.prepareStatement("DELETE FROM historial_alergia WHERE numHistoria = ?")) {
-				ps.setLong(1, p.getHistorial().getNumHistoria());
-				ps.executeUpdate();
+			if (cambiarAlergias) {
+				try (PreparedStatement ps = con.prepareStatement("DELETE FROM historial_alergia WHERE numHistoria = ?")) {
+					ps.setLong(1, p.getHistorial().getNumHistoria());
+					ps.executeUpdate();
+				}
+				guardarAlergias(con, p.getHistorial());
 			}
-			guardarAlergias(con, p.getHistorial());
 			con.commit();
-		} catch (SQLException e) {
+		} catch (SQLException | RuntimeException e) {
 			deshacer(con);
 			throw new AccesoDatosException("Error al modificar el paciente", e);
 		} finally {

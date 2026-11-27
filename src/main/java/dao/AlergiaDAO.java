@@ -15,9 +15,15 @@ import modelo.Alergia;
 public class AlergiaDAO {
 
 	private static final Path CARPETA_ALERGIAS = Path.of("alergias");
+	private int ficherosIlegibles = 0;
+
+	public int getFicherosIlegibles() {
+		return ficherosIlegibles;
+	}
 
 	public List<Alergia> listar() {
 		List<Alergia> alergias = new ArrayList<>();
+		ficherosIlegibles = 0;
 		if (!Files.isDirectory(CARPETA_ALERGIAS)) {
 			return alergias;
 		}
@@ -26,6 +32,8 @@ public class AlergiaDAO {
 				Alergia a = leer(fichero);
 				if (a != null) {
 					alergias.add(a);
+				} else {
+					ficherosIlegibles++;
 				}
 			}
 		} catch (IOException e) {
@@ -33,6 +41,26 @@ public class AlergiaDAO {
 		}
 		alergias.sort(Comparator.comparing(Alergia::getIdAlergia));
 		return alergias;
+	}
+
+	public long mayorId() {
+		long maximo = 0;
+		if (!Files.isDirectory(CARPETA_ALERGIAS)) {
+			return maximo;
+		}
+		try (DirectoryStream<Path> ficheros = Files.newDirectoryStream(CARPETA_ALERGIAS, "alergia_*.dat")) {
+			for (Path fichero : ficheros) {
+				String nombre = fichero.getFileName().toString();
+				try {
+					long id = Long.parseLong(nombre.substring(8, nombre.length() - 4));
+					maximo = Math.max(maximo, id);
+				} catch (NumberFormatException e) {
+				}
+			}
+		} catch (IOException e) {
+			throw new AccesoDatosException("Error al leer la carpeta de alergias", e);
+		}
+		return maximo;
 	}
 
 	public Alergia buscar(Long id) {

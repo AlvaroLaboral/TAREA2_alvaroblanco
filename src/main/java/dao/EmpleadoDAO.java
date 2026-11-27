@@ -113,7 +113,7 @@ public class EmpleadoDAO {
 				}
 			}
 			con.commit();
-		} catch (SQLException ex) {
+		} catch (SQLException | RuntimeException ex) {
 			try {
 				con.rollback();
 			} catch (SQLException ignorada) {

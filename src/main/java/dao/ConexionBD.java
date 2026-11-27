@@ -10,6 +10,7 @@ import java.util.Properties;
 public class ConexionBD {
 
 	private static Connection conexion;
+	private static String ultimoError;
 
 	private ConexionBD() {
 	}
@@ -20,6 +21,7 @@ public class ConexionBD {
 				Properties props = new Properties();
 				try (InputStream is = ConexionBD.class.getClassLoader().getResourceAsStream("db.properties")) {
 					if (is == null) {
+						ultimoError = "no se encuentra el fichero db.properties";
 						return null;
 					}
 					props.load(is);
@@ -28,9 +30,14 @@ public class ConexionBD {
 						props.getProperty("password"));
 			}
 		} catch (IOException | SQLException e) {
+			ultimoError = e.getMessage();
 			conexion = null;
 		}
 		return conexion;
+	}
+
+	public static String getUltimoError() {
+		return ultimoError;
 	}
 
 	public static void cerrarConexion() {
